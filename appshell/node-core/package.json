@@ -4,5 +4,8 @@
   "description": "Node core for appshell",
   "main": "Launcher.js",
   "author": "Joel Brandt <joelrbrandt@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "yargs": "^3.9.1"
+  }
 }

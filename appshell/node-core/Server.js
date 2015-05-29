@@ -96,7 +96,9 @@ maxerr: 50, node: true */
     /**
      * Starts the server.
      */
-    function start() {
+    function start(port) {
+        port = port || 0;
+
         function sendCommandToParentProcess() {
             var cmd = "\n\n" + (_commandCount++) + "|"
                 + Array.prototype.join.call(arguments, "|") + "\n\n";
@@ -188,7 +190,7 @@ maxerr: 50, node: true */
                 }
             });
             
-            httpServer.listen(0, "127.0.0.1", function () {
+            httpServer.listen(port, "127.0.0.1", function () {
                 var wsServer = null;
                 var address = httpServer.address();
                 if (address !== null) {

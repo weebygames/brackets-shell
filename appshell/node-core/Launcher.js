@@ -31,6 +31,15 @@ maxerr: 50, node: true */
     var Logger = require("./Logger"),
         Server = require("./Server"),
         os     = require("os");
+    var argv = require('yargs')
+        .option('p', {
+            alias : 'port',
+            demand: false,
+            default: 0,
+            describe: 'Port to run the http and ws server on',
+            type: 'int'
+        })
+        .argv;
     
     /** @define {boolean} Whether debugger should be enabled at launch
      *
@@ -104,9 +113,9 @@ maxerr: 50, node: true */
             );
             exit();
         });
-        Server.start();
+        Server.start(argv.port);
     }
-    
+
     if (!DEBUG_ON_LAUNCH) {
         launch();
     } else {
