@@ -39,6 +39,13 @@ maxerr: 50, node: true */
             describe: 'Port to run the http and ws server on',
             type: 'int'
         })
+        .option('h', {
+            alias: 'host',
+            demand: false,
+            default: '127.0.0.1',
+            describe: 'The host to run the http and ws server on',
+            type: 'string'
+        })
         .argv;
     
     /** @define {boolean} Whether debugger should be enabled at launch
@@ -113,7 +120,7 @@ maxerr: 50, node: true */
             );
             exit();
         });
-        Server.start(argv.port);
+        Server.start(argv.host, argv.port);
     }
 
     if (!DEBUG_ON_LAUNCH) {
