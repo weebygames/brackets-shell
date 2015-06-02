@@ -27,7 +27,7 @@ maxerr: 50, node: true */
 
 (function () {
     "use strict";
-    
+
     var Logger = require("./Logger"),
         Server = require("./Server"),
         os     = require("os");
@@ -46,8 +46,21 @@ maxerr: 50, node: true */
             describe: 'The host to run the http and ws server on',
             type: 'string'
         })
+        .option('l', {
+            alias: 'log',
+            demand: false,
+            default: null,
+            describe: 'Filename to dump all log data to. If not null, all log data is appended to the specified file.',
+            type: 'string'
+        })
+        .option('noparent', {
+            demand: false,
+            default: false,
+            describe: 'Do not use stdin and stdout',
+            type: 'boolean'
+        })
         .argv;
-    
+
     /** @define {boolean} Whether debugger should be enabled at launch
      *
      * If true, the debugger is enabled automatically, and the init function is
@@ -66,12 +79,6 @@ maxerr: 50, node: true */
      * won't know that it's parent process has died.)
      */
     var DEBUG_ON_LAUNCH = false;
-
-    /** @define {?string} Filename to dump all log data to.
-     * If not null, all log data is appended to the specified file.
-     */
-    var LOG_FILENAME_ON_LAUNCH = null;
-    
 
     function exit() {
         if (Server) {
@@ -109,8 +116,8 @@ maxerr: 50, node: true */
      */
     function launch() {
         process.on("uncaughtException", uncaughtExceptionHandler);
-        if (LOG_FILENAME_ON_LAUNCH) {
-            Logger.setLogFilename(LOG_FILENAME_ON_LAUNCH);
+        if (argv.l) {
+            Logger.setLogFilename(argv.l);
         }
         Logger.remapConsole();
         Server.on("end", function () {
@@ -120,7 +127,7 @@ maxerr: 50, node: true */
             );
             exit();
         });
-        Server.start(argv.host, argv.port);
+        Server.start(argv.host, argv.port, argv.noparent);
     }
 
     if (!DEBUG_ON_LAUNCH) {

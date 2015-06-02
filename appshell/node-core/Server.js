@@ -92,19 +92,23 @@ maxerr: 50, node: true */
         Server.emit("end");
         Server.removeAllListeners();
     }
-    
+
     /**
      * Starts the server.
      */
-    function start(host, port) {
+    function start(host, port, noparent) {
         port = port || 0;
 
         function sendCommandToParentProcess() {
+            if (noparent) {
+                return;
+            }
+
             var cmd = "\n\n" + (_commandCount++) + "|"
                 + Array.prototype.join.call(arguments, "|") + "\n\n";
             process.stdout.write(cmd);
         }
-        
+
         function httpRequestHandler(req, res) {
             if (req.method === "GET") {
                 if (req.url === "/api" || req.url.indexOf("/api/") === 0) {
@@ -234,11 +238,14 @@ maxerr: 50, node: true */
                 }
             });
         }
-        
+
         // Do initialization
         Logger.info("[Server] beginning startup");
-        setupStdin();
-        setupStdout();
+        if (!noparent) {
+            Logger.info("[Server] setting up stdin and stdout");
+            setupStdin();
+            setupStdout();
+        }
         setupHttpAndWebSocketServers(function (err, servers) {
             if (err) {
                 Logger.error(
