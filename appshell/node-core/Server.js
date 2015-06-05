@@ -40,7 +40,9 @@ maxerr: 50, node: true */
         EventEmitter      = require("events").EventEmitter,
         Logger            = require("./Logger"),
         ConnectionManager = require("./ConnectionManager"),
-        DomainManager     = require("./DomainManager");
+        DomainManager     = require("./DomainManager"),
+        mime              = require('mime'),
+        url               = require('url');
     
     /** 
      * @constructor
@@ -111,6 +113,7 @@ maxerr: 50, node: true */
 
         function httpRequestHandler(req, res) {
             if (req.method === "GET") {
+                var urlObj = url.parse(req.url);
                 if (req.url === "/api" || req.url.indexOf("/api/") === 0) {
                     res.setHeader("Content-Type", "application/json");
                     res.end(
@@ -118,6 +121,31 @@ maxerr: 50, node: true */
                                         null,
                                         4)
                     );
+                } else if (req.url.indexOf("/static/") === 0) {
+                    var filePath = urlObj.pathname;
+                    filePath = filePath.substring(filePath.indexOf("/static") + 7, filePath.length);
+
+                    if (fs.existsSync(filePath)) {
+                        var stat = fs.statSync(filePath);
+
+                        if (stat.isFile()) {
+                            var mimetype = mime.lookup(filePath);
+                            res.writeHead(200, {
+                                'Content-Type': mimetype,
+                                'Content-Length': stat.size
+                            });
+
+                            var readStream = fs.createReadStream(filePath);
+                            // We replaced all the event handlers with a simple call to readStream.pipe()
+                            readStream.pipe(res);
+                        } else {
+                            res.statusCode = 406;
+                            res.end();
+                        }
+                    } else {
+                        res.statusCode = 404;
+                        res.end();
+                    }
                 } else {
                     res.setHeader("Content-Type", "text/plain");
                     res.end("Brackets-Shell Server\n");
@@ -127,7 +155,7 @@ maxerr: 50, node: true */
                 res.end();
             }
         }
-        
+
         function setupStdin() {
             // re-enable getting events from stdin
             try {
