@@ -35,6 +35,7 @@ maxerr: 50, node: true */
     var PING_DELAY = 1000; // send ping to parent process every 1 second
     
     var fs                = require("fs"),
+        path              = require("path"),
         http              = require("http"),
         WebSocket         = require("./thirdparty/ws"),
         EventEmitter      = require("events").EventEmitter,
@@ -42,7 +43,9 @@ maxerr: 50, node: true */
         ConnectionManager = require("./ConnectionManager"),
         DomainManager     = require("./DomainManager"),
         mime              = require('mime'),
-        url               = require('url');
+        url               = require('url'),
+        multiparty        = require('multiparty'),
+        fsExtra           = require ('fs.extra');
     
     /** 
      * @constructor
@@ -112,8 +115,8 @@ maxerr: 50, node: true */
         }
 
         function httpRequestHandler(req, res) {
+            var urlObj = url.parse(req.url);
             if (req.method === "GET") {
-                var urlObj = url.parse(req.url);
                 if (req.url === "/api" || req.url.indexOf("/api/") === 0) {
                     res.setHeader("Content-Type", "application/json");
                     res.end(
@@ -149,6 +152,55 @@ maxerr: 50, node: true */
                 } else {
                     res.setHeader("Content-Type", "text/plain");
                     res.end("Brackets-Shell Server\n");
+                }
+            } else if (req.method === "POST") {
+                if (req.url.indexOf("/static/") === 0) {
+                    var filePath = urlObj.pathname;
+                    filePath = filePath.substring(filePath.indexOf("/static") + 7, filePath.length);
+
+                    if (fs.existsSync(filePath)) {
+                        // Make sure the upload path is a directory
+                        var pathStat = fs.statSync(filePath);
+                        if (!pathStat.isDirectory()) {
+                            res.statusCode = 406;
+                            res.end("not_dir");
+                            return;
+                        }
+
+                        var form = new multiparty.Form();
+                        form.parse(req, function(err, fields, files) {
+                            if (err) {
+                                console.error("Error with static post", err);
+                                res.statusCode = 500;
+                                res.end();
+                                return;
+                            }
+
+                            // Move files from tmp to destination
+                            var completeFiles = 0;
+                            var filesCount = Object.keys(files).length;
+                            for (var key in files) {
+                                var postedFile = files[key][0];
+                                var destPath = path.join(filePath, postedFile.originalFilename);
+                                fsExtra.move(postedFile.path, destPath, function(err) {
+                                    if (err) {
+                                        console.error("Error with static post file", postedFile, destPath, err);
+                                        res.statusCode = 500;
+                                        res.end();
+                                        return;
+                                    }
+                                    completeFiles++;
+                                    if (completeFiles === filesCount) {
+                                        res.statusCode = 200;
+                                        res.end("accepted");
+                                    }
+                                });
+                            }
+                        });
+                    } else {
+                        res.statusCode = 406;
+                        res.end("not_exists");
+                    }
                 }
             } else { // Not a GET request
                 res.statusCode = 501;
